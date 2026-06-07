@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #222;
+  --border: #2a2a2a;
+  --text: #e8e8e8;
+  --muted: #666;
+  --dim: #333;
+  --accent: #c8f542;
+  --accent-dim: rgba(200,245,66,.12);
+  --red: #ff4d4d;
+  --blue: #4d9fff;
+  --purple: #a78bfa;
+  --amber: #fbbf24;
+  --teal: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+.app { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+
+header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .15em; }
+.week-nav { display: flex; align-items: center; gap: 12px; }
+.week-nav button {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); width: 28px; height: 28px; border-radius: 6px;
+  cursor: pointer; font-size: 14px; transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.week-nav button:hover { border-color: var(--accent); color: var(--accent); }
+.week-label { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+
+.progress-row {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
+}
+.progress-track {
+  flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.progress-fill {
+  height: 3px; background: var(--accent); border-radius: 2px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.progress-pct {
+  font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent);
+  min-width: 36px; text-align: right;
+}
+
+.day-header-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dh { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-align: center; letter-spacing: .05em; }
+.dh.today { color: var(--accent); }
+
+.section-label {
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted);
+  letter-spacing: .2em; padding: 20px 0 8px;
+  text-transform: uppercase;
+}
+
+.habit-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+.habit-row:hover .habit-name { color: var(--text); }
+
+.habit-name {
+  font-size: 12px; color: #999; padding-right: 12px;
+  line-height: 1.3; transition: color .1s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.habit-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+.cell { display: flex; align-items: center; justify-content: center; }
+.check {
+  width: 30px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; transition: all .12s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: transparent; position: relative;
+}
+.check:hover { border-color: #444; background: var(--surface2); }
+.check.done { color: #0f0f0f; border-color: transparent; }
+.check.na { background: transparent; border-color: transparent; cursor: default; }
+.check.na::after { content: ''; width: 4px; height: 1px; background: var(--dim); border-radius: 1px; }
+.check.today-cell { border-color: #333; }
+
+.cat-daily   .check.done { background: var(--blue); }
+.cat-body    .check.done { background: var(--teal); }
+.cat-english .check.done { background: var(--purple); }
+.cat-ia      .check.done { background: var(--accent); }
+.cat-comm    .check.done { background: #f472b6; }
+.cat-read    .check.done { background: var(--amber); }
+
+.stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-top: 36px;
+}
+.stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+}
+.stat-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: .12em; margin-bottom: 8px; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); }
+.stat-val span { font-size: 11px; color: var(--muted); margin-left: 2px; }
+.stat.accent { border-color: rgba(200,245,66,.3); }
+.stat.accent .stat-val { color: var(--accent); }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px;
+  padding-top: 20px; border-top: 1px solid var(--border);
+}
+.leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+@media (max-width: 600px) {
+  .app { padding: 20px 12px 60px; }
+  .habit-name { font-size: 11px; }
+  .check { width: 26px; height: 26px; }
+  .stats { grid-template-columns: repeat(2,1fr); }
+  .day-header-row, .habit-row { grid-template-columns: 140px repeat(7,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="logo">HABIT TRACKER</div>
+    </div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">&#8592;</button>
+      <span class="week-label" id="week-label"></span>
+      <button onclick="changeWeek(1)">&#8594;</button>
+    </div>
+  </header>
+
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="pfill" style="width:0%"></div></div>
+    <div class="progress-pct" id="ppct">0%</div>
+  </div>
+
+  <div class="day-header-row" id="day-headers"></div>
+  <div id="tracker"></div>
+
+  <div class="stats">
+    <div class="stat accent"><div class="stat-label">SCORE SEMAINE</div><div class="stat-val" id="s-done">0<span>%</span></div></div>
+    <div class="stat"><div class="stat-label">GYM</div><div class="stat-val" id="s-gym">0<span>/6</span></div></div>
+    <div class="stat"><div class="stat-label">LECTURE</div><div class="stat-val" id="s-read">0<span>/4</span></div></div>
+    <div class="stat"><div class="stat-label">STREAK</div><div class="stat-val" id="s-streak">0<span>j</span></div></div>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>Quotidien</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--teal)"></div>Corps</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div>Anglais</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--accent)"></div>Formation IA</div>
+    <div class="leg"><div class="leg-dot" style="background:#f472b6"></div>Comm</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div>Lecture</div>
+  </div>
+</div>
+
+<script>
+const DAYS_SHORT = ['L','Ma','Me','J','V','S','D'];
+const DAYS_FULL  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+const HABITS = [
+  { section:'Quotidien', cat:'cat-daily', items:[
+    { id:'creatine', name:'Créatine',             sub:'', days:[1,1,1,1,1,1,1] },
+    { id:'vitamins', name:'Vitamines',             sub:'le matin', days:[1,1,1,1,1,1,1] },
+    { id:'tracking', name:'Food & weight',         sub:'MacroFactor', days:[1,1,1,1,1,1,1] },
+    { id:'podcast',  name:'Podcast / audiobook',   sub:'trajet', days:[1,1,1,1,1,0,0] },
+  ]},
+  { section:'Corps', cat:'cat-body', items:[
+    { id:'gym', name:'Gym', sub:'', days:[0,1,1,0,1,1,1] },
+  ]},
+  { section:'Anglais', cat:'cat-english', items:[
+    { id:'ewa',      name:'EWA + BoldVoice + Atlas', sub:'vendredi ~30 min', days:[0,0,0,0,1,0,0] },
+    { id:'brilliant',name:'Brilliant + Imprint',      sub:'~20 min soir', days:[1,1,1,1,0,0,0] },
+  ]},
+  { section:'Formation IA', cat:'cat-ia', items:[
+    { id:'ia', name:'Formation IA', sub:'sam 90+90 min · dim 90 min', days:[0,0,0,0,0,1,1] },
+  ]},
+  { section:'Communication', cat:'cat-comm', items:[
+    { id:'comm', name:'Formation comm', sub:'dim matin 90 min', days:[0,0,0,0,0,0,1] },
+  ]},
+  { section:'Lecture', cat:'cat-read', items:[
+    { id:'read', name:'Lecture', sub:'20 min lun/jeu · 60 min ven/sam', days:[1,0,0,1,1,1,0] },
+  ]},
+];
+
+let weekOffset = 0;
+let data = {};
+
+function load() {
+  try { data = JSON.parse(localStorage.getItem('hbt_v1') || '{}'); } catch(e) { data = {}; }
+}
+function save() {
+  try { localStorage.setItem('hbt_v1', JSON.stringify(data)); } catch(e) {}
+}
+
+function getMondayOf(offset) {
+  const d = new Date();
+  const dow = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - dow + offset * 7);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function weekKey(offset) {
+  return getMondayOf(offset).toISOString().slice(0,10);
+}
+
+function getKey(wk, id, di) { return wk + '_' + id + '_' + di; }
+
+function todayDow() {
+  return (new Date().getDay() + 6) % 7;
+}
+
+function toggle(id, di) {
+  const k = getKey(weekKey(weekOffset), id, di);
+  data[k] = !data[k];
+  save();
+  render();
+}
+
+function getWeekLabel(offset) {
+  const mon = getMondayOf(offset);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+  return fmt(mon) + ' – ' + fmt(sun);
+}
+
+function render() {
+  const wk = weekKey(weekOffset);
+  const tdc = weekOffset === 0 ? todayDow() : -1;
+
+  document.getElementById('week-label').textContent = getWeekLabel(weekOffset);
+
+  // Day headers
+  let dhHtml = '<div></div>';
+  DAYS_SHORT.forEach((d, i) => {
+    dhHtml += '<div class="dh' + (i === tdc ? ' today' : '') + '" title="' + DAYS_FULL[i] + '">' + d + '</div>';
+  });
+  document.getElementById('day-headers').innerHTML = dhHtml;
+
+  // Tracker rows
+  let html = '';
+  HABITS.forEach(section => {
+    html += '<div class="section-label">' + section.section + '</div>';
+    section.items.forEach(habit => {
+      html += '<div class="habit-row ' + section.cat + '">';
+      html += '<div class="habit-name" title="' + habit.name + '">' + habit.name +
+              (habit.sub ? '<div class="habit-sub">' + habit.sub + '</div>' : '') + '</div>';
+      DAYS_SHORT.forEach((d, i) => {
+        const active = habit.days[i];
+        const k = getKey(wk, habit.id, i);
+        const done = !!data[k];
+        const isToday = i === tdc;
+        html += '<div class="cell">';
+        if (!active) {
+          html += '<div class="check na"></div>';
+        } else {
+          html += '<div class="check' +
+            (done ? ' done' : '') +
+            (isToday ? ' today-cell' : '') +
+            '" onclick="toggle(\'' + habit.id + '\',' + i + ')" ' +
+            'title="' + DAYS_FULL[i] + ' – ' + habit.name + '">' +
+            (done ? '&#10003;' : '') +
+            '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+  });
+  document.getElementById('tracker').innerHTML = html;
+
+  // Stats
+  let total = 0, done = 0, gym = 0, read = 0;
+  HABITS.forEach(s => s.items.forEach(h => {
+    h.days.forEach((active, i) => {
+      if (!active) return;
+      total++;
+      if (data[getKey(wk, h.id, i)]) {
+        done++;
+        if (h.id === 'gym') gym++;
+        if (h.id === 'read') read++;
+      }
+    });
+  }));
+
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('pfill').style.width = pct + '%';
+  document.getElementById('ppct').textContent = pct + '%';
+  document.getElementById('s-done').innerHTML = pct + '<span>%</span>';
+  document.getElementById('s-gym').innerHTML = gym + '<span>/6</span>';
+  document.getElementById('s-read').innerHTML = read + '<span>/4</span>';
+
+  // Streak
+  let streak = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const dow = (d.getDay() + 6) % 7;
+    const mon = new Date(d); mon.setDate(d.getDate() - dow);
+    const wk2 = mon.toISOString().slice(0,10);
+    let dayHasAny = false, dayAllDone = true;
+    HABITS.forEach(s => s.items.forEach(h => {
+      if (!h.days[dow]) return;
+      dayHasAny = true;
+      if (!data[getKey(wk2, h.id, dow)]) dayAllDone = false;
+    }));
+    if (dayHasAny && dayAllDone) streak++;
+    else if (dayHasAny) break;
+  }
+  document.getElementById('s-streak').innerHTML = streak + '<span>j</span>';
+}
+
+function changeWeek(dir) { weekOffset += dir; render(); }
+
+load();
+render();
+</script>
+</body>
+</html>
